@@ -1,5 +1,6 @@
 use std::{vec::Vec, ops::Index, clone::Clone, marker::Copy};
 use rand::rngs::ThreadRng;
+use crate::world::Position;
 
 const MAGIC_GENE_DECISION_WORD: u16 = 0x4C65;
 
@@ -115,10 +116,9 @@ pub fn decode_gene(gene: Gene) -> (i32, i32, u16, bool, bool) {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Cell {
-    genes: Vec<Gene>,
-    x: u32,
-    y: u32,
-    food_level: u32,
+    pub(in crate) genes: Vec<Gene>,
+    pub(in crate) position: Position<usize>,
+    pub(in crate) food_level: u32,
 }
 
 impl Index<usize> for Cell {
@@ -130,7 +130,7 @@ impl Index<usize> for Cell {
 }
 
 pub impl Cell {
-    pub fn generate_offspring(&self, x: u32, y: u32) -> Cell {
+    pub fn generate_offspring(&self, ) -> Cell {
         let ret: Cell;
         ret.genes = self.clone();
         
@@ -139,8 +139,7 @@ pub impl Cell {
             ret.genes[thread_rng().gen::<usize>() % ret.genes.len()] ^= 1 << (thread_rng().gen::<8>() & 0x1f);
         }
 
-        ret.x = x;
-        ret.y = y;
+        ret.position = self.position;
         ret
     }
 }
