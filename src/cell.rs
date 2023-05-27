@@ -119,6 +119,7 @@ pub struct Cell {
     pub(in crate) genes: Vec<Gene>,
     pub(in crate) position: Position<usize>,
     pub(in crate) food_level: u32,
+    pub(in crate) rotation: Compass,
 }
 
 impl Index<usize> for Cell {
@@ -130,11 +131,20 @@ impl Index<usize> for Cell {
 }
 
 impl Cell {
+    pub fn create_cell(gene_count: usize) -> Cell {
+        Cell {
+            genes: vec![0; gene_count],
+            position: Position { x: 0, y: 0 },
+            food_level: 10,
+            rotation: match rand::thread_rng().gen::<u8>() % 4 { 0 => Compass::North, 1 => Compass::South, 2 => Compass::East, 3 => Compass::West, _ => Compass::East },
+        }
+    }
+
     pub fn generate_offspring(&self) -> Cell {
         let mut ret = self.clone();
         let len = ret.genes.len();
         
-        if MAGIC_GENE_DECISION_WORD == rand::thread_rng().gen()
+        if MAGIC_GENE_DECISION_WORD == rand::thread_rng().gen::<u16>()
         {
             ret.genes[rand::thread_rng().gen::<usize>() % len] ^= 1 << (rand::thread_rng().gen::<u8>() & 0x1f);
         }
