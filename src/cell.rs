@@ -1,5 +1,5 @@
 use std::{vec::Vec, ops::Index, clone::Clone, marker::Copy};
-use rand::rngs::ThreadRng;
+use rand::*;
 use crate::world::Position;
 
 const MAGIC_GENE_DECISION_WORD: u16 = 0x4C65;
@@ -88,7 +88,7 @@ pub enum OutputNeurons {
 type Gene = i32;
 
 pub fn encode_gene(input: i32, output: i32, weight: u16, input_is_internal: bool, output_is_internal: bool) -> Gene {
-    let ret = ((input & 0x7f) << 24) | ((output & 0x7f) << 16);
+    let mut ret = ((input & 0x7f) << 24) | ((output & 0x7f) << 16);
     ret |= if input_is_internal {
         1 << 31
     } else {
@@ -101,7 +101,7 @@ pub fn encode_gene(input: i32, output: i32, weight: u16, input_is_internal: bool
         0
     };
 
-    ret | weight
+    ret | (weight as i32)
 }
 
 pub fn decode_gene(gene: Gene) -> (i32, i32, u16, bool, bool) {
@@ -114,7 +114,7 @@ pub fn decode_gene(gene: Gene) -> (i32, i32, u16, bool, bool) {
     (input, output, weight, input_is_internal, output_is_internal)
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Cell {
     pub(in crate) genes: Vec<Gene>,
     pub(in crate) position: Position<usize>,
@@ -125,18 +125,18 @@ impl Index<usize> for Cell {
     type Output = Gene;
 
     fn index(&self, index: usize) -> &Self::Output {
-        genes[index]
+        self.genes.index(index)
     }
 }
 
-pub impl Cell {
-    pub fn generate_offspring(&self, ) -> Cell {
-        let ret: Cell;
-        ret.genes = self.clone();
+impl Cell {
+    pub fn generate_offspring(&self) -> Cell {
+        let mut ret = self.clone();
+        let len = ret.genes.len();
         
-        if MAGIC_GENE_DECISION_WORD == thread_rng().gen::<i16>()
+        if MAGIC_GENE_DECISION_WORD == rand::thread_rng().gen()
         {
-            ret.genes[thread_rng().gen::<usize>() % ret.genes.len()] ^= 1 << (thread_rng().gen::<8>() & 0x1f);
+            ret.genes[rand::thread_rng().gen::<usize>() % len] ^= 1 << (rand::thread_rng().gen::<u8>() & 0x1f);
         }
 
         ret.position = self.position;

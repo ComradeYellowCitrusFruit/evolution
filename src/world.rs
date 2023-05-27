@@ -1,6 +1,6 @@
 use crate::cell::*;
-use std::{vec::Vec, option::Option, boxed::Box, ops::Index};
-use rand::rngs::ThreadRng;
+use std::{vec::Vec, option::Option, ops::Index};
+use rand::*;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Position<T> {
@@ -8,7 +8,7 @@ pub struct Position<T> {
     pub y: T,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 struct Grid<T> {
     x: usize,
     y: usize,
@@ -16,8 +16,8 @@ struct Grid<T> {
 }
 
 impl<T> Grid<T> {
-    fn init<T>(xp: usize, yp: usize) -> Grid<T> {
-        let ret: Grid<T> = Grid<T> {
+    fn init(xp: usize, yp: usize) -> Grid<T> {
+        let ret: Grid<T> = Grid {
             x: xp,
             y: yp,
             internal: Vec::with_capacity(xp * yp),
@@ -28,13 +28,13 @@ impl<T> Grid<T> {
 }
 
 impl<T> Index<Position<usize>> for Grid<T> {
-    type Output = Option<&T>;
+    type Output = T;
 
-    fn index(&self, index: Position<usize>) -> Self::Output {
-        let ret = if index.y > y || index.x > x {
-            None
+    fn index(&self, index: Position<usize>) -> &Self::Output {
+        let ret = if index.y >= self.y || index.x >= self.x {
+            self.internal.index(self.x * (self.y - 1) + (self.x - 1))
         } else {
-            Some(genes[x * index.y + index.x])
+            self.internal.index(self.x * index.y + index.x)
         };
 
         ret
@@ -44,7 +44,7 @@ impl<T> Index<Position<usize>> for Grid<T> {
 pub struct Tile {
     pub(self) food: bool,
     pub(self) pheromone_level: f32,
-    pub(self) cell: Option<&mut Cell>, // In C/C++ we'd use a pointer lmao
+    pub(self) cell: Option<Cell>, // In C/C++ we'd use a pointer lmao
 }
 
 pub struct World {
