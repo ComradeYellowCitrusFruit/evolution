@@ -65,6 +65,10 @@ impl World {
             grid: Grid::init(x, y),
         }
     }
+    
+    pub fn step(&self) -> () {
+        for cell in self.cell_list.as_slice() {
+            // TODO: cosas
+        }
+    }
 }
-
-// TODO: most of the code will probably go here
