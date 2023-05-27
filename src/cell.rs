@@ -1,13 +1,18 @@
-use std::{vec::Vec, ops::Index};
+use std::{vec::Vec, ops::Index, clone::Clone, marker::Copy};
+use rand::rngs::ThreadRng;
 
-enum Compass {
+const MAGIC_GENE_DECISION_WORD: u16 = 0x4C65;
+
+#[derive(Debug, Clone, Copy)]
+pub enum Compass {
     North = 0,
     South,
     East,
     West,
 }
 
-enum ImputNeurons {
+#[derive(Debug, Clone, Copy)]
+pub enum ImputNeurons {
     // Spacial information. 
     FoodLeftRight = 0,
     FoodUpDown,
@@ -47,7 +52,8 @@ enum ImputNeurons {
     Oscilator,
 }
 
-enum InteralNeurons {
+#[derive(Debug, Clone, Copy)]
+pub enum InteralNeurons {
     // Hyperbolic trig
     Tanh = 0,
     Cosh,
@@ -61,7 +67,8 @@ enum InteralNeurons {
     InverseSqrt,
 }
 
-enum OutputNeurons {
+#[derive(Debug, Clone, Copy)]
+pub enum OutputNeurons {
     // Misc
     SetOscilator,
     EmitPheromone,
@@ -106,6 +113,7 @@ pub fn decode_gene(gene: Gene) -> (i32, i32, u16, bool, bool) {
     (input, output, weight, input_is_internal, output_is_internal)
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct Cell {
     genes: Vec<Gene>,
     x: u32,
@@ -122,13 +130,17 @@ impl Index<usize> for Cell {
 }
 
 pub impl Cell {
-    pub fn generate_offspring(&self) -> Cell {
+    pub fn generate_offspring(&self, x: u32, y: u32) -> Cell {
         let ret: Cell;
-        for i in self.genes
+        ret.genes = self.clone();
+        
+        if MAGIC_GENE_DECISION_WORD == thread_rng().gen::<i16>()
         {
-            ret.genes.push(i);
+            ret.genes[thread_rng().gen::<usize>() % ret.genes.len()] ^= 1 << (thread_rng().gen::<8>() & 0x1f);
         }
 
-        // TODO: stuff
+        ret.x = x;
+        ret.y = y;
+        ret
     }
 }
