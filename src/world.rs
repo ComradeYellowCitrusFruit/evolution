@@ -1,5 +1,7 @@
-use crate::cell::{*, self};
-use std::{vec::Vec, option::Option, ops::Index};
+#[allow(dead_code)]
+
+use crate::cell::*;
+use std::{vec::Vec, ops::Index, ptr::null_mut};
 use rand::*;
 
 #[derive(Debug, Clone, Copy)]
@@ -20,7 +22,7 @@ impl Grid {
         Grid {
             x: xp,
             y: yp,
-            internal: vec![Tile { has_food: false, pheromone_level: 0.0, cell: 0 as *mut Cell }; xp * yp],
+            internal: vec![Tile { has_food: false, pheromone_level: 0.0, cell: null_mut() }; xp * yp],
         }
     }
 }
@@ -60,10 +62,20 @@ pub struct World {
 
 impl World {
     pub fn new_world(population: usize, gene_count: usize, x: usize, y: usize) -> World {
-        World {
+        let mut ret = World {
             cell_list: vec![Cell::create_cell(gene_count); population],
             grid: Grid::init(x, y),
+        };
+
+        for cell in ret.cell_list.as_mut_slice() { // I hate Rust mutability rules
+            loop { // Why tf doesnt Rust have do { ... } while?
+                cell.position.x = thread_rng().gen::<usize>() % ret.grid.x;
+                cell.position.y = thread_rng().gen::<usize>() % ret.grid.y;
+                if ret.grid[cell.position].cell != null_mut() { break; }
+            }
         }
+
+        ret
     }
     
     pub fn step(&self) -> () {
