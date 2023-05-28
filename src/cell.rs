@@ -13,7 +13,7 @@ pub enum Compass {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum ImputNeurons {
+pub enum InputNeurons {
     // Spacial information. 
     FoodLeftRight = 0,
     FoodUpDown,
@@ -53,6 +53,38 @@ pub enum ImputNeurons {
     Oscilator,
 }
 
+impl InputNeurons {
+    pub fn from_int(int: u8) -> InputNeurons {
+        match int % ((InputNeurons::Oscilator as u8) + 1) {
+            0 => InputNeurons::FoodLeftRight,
+            1 => InputNeurons::FoodUpDown,
+            2 => InputNeurons::FoodForward,
+            3 => InputNeurons::FoodDensity,
+            4 => InputNeurons::PheromoneLeftRight,
+            5 => InputNeurons::PheromoneUpDown,
+            6 => InputNeurons::PheromoneForward,
+            7 => InputNeurons::PheromoneDensity,
+            8 => InputNeurons::BlockageLeftRight,
+            9 => InputNeurons::BlockageUpDown,
+            10 => InputNeurons::BlockageForward,
+            11 => InputNeurons::PopLeftRight,
+            12 => InputNeurons::PopUpDown,
+            13 => InputNeurons::PopForward,
+            14 => InputNeurons::PopDensity,
+            15 => InputNeurons::LocationX,
+            16 => InputNeurons::LocationY,
+            17 => InputNeurons::Age,
+            18 => InputNeurons::KillCount,
+            19 => InputNeurons::LastMoveX,
+            20 => InputNeurons::LastMoveY,
+            21 => InputNeurons::GeneticSimilarity,
+            22 => InputNeurons::Random,
+            23 => InputNeurons::Oscilator,
+            _ => InputNeurons::Random,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum InteralNeurons {
     // Hyperbolic trig
@@ -68,10 +100,26 @@ pub enum InteralNeurons {
     InverseSqrt,
 }
 
+impl InteralNeurons {
+    pub fn from_int(int: u8) -> InteralNeurons {
+        match int % ((InteralNeurons::InverseSqrt as u8) + 1) {
+            0 => InteralNeurons::Tanh,
+            1 => InteralNeurons::Cosh,
+            2 => InteralNeurons::Sinh,
+            3 => InteralNeurons::Abs,
+            4 => InteralNeurons::Neg,
+            5 => InteralNeurons::Avg,
+            6 => InteralNeurons::Sqrt,
+            7 => InteralNeurons::InverseSqrt,
+            _ => InteralNeurons::Avg
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum OutputNeurons {
     // Misc
-    SetOscilator,
+    SetOscilator = 0,
     EmitPheromone,
     SetResponsiveness,
     
@@ -83,6 +131,22 @@ pub enum OutputNeurons {
 
     // Violence
     KillFoward,
+}
+
+impl OutputNeurons {
+    pub fn from_int(int: u8) -> OutputNeurons {
+        match int % ((OutputNeurons::KillFoward as u8) + 1) {
+            0 => OutputNeurons::SetOscilator,
+            1 => OutputNeurons::EmitPheromone,
+            2 => OutputNeurons::SetResponsiveness,
+            3 => OutputNeurons::Move,
+            4 => OutputNeurons::MoveX,
+            5 => OutputNeurons::MoveY,
+            6 => OutputNeurons::MoveRandom,
+            7 => OutputNeurons::KillFoward,
+            _ => OutputNeurons::Move,
+        }
+    }
 }
 
 type Gene = i32;
@@ -118,7 +182,10 @@ pub fn decode_gene(gene: Gene) -> (i32, i32, u16, bool, bool) {
 pub struct Cell {
     pub(in crate) genes: Vec<Gene>,
     pub(in crate) position: Position<usize>,
+    pub(in crate) last_move: Position<usize>,
     pub(in crate) food_level: u32,
+    pub(in crate) kill_count: u32,
+    pub(in crate) period: f32,
     pub(in crate) rotation: Compass,
 }
 
@@ -135,7 +202,10 @@ impl Cell {
         Cell {
             genes: vec![0; gene_count],
             position: Position { x: 0, y: 0 },
+            last_move: Position { x: 0, y: 0 },
             food_level: 10,
+            kill_count: 0,
+            period: 0.0273972602739726,
             rotation: match rand::thread_rng().gen::<u8>() % 4 { 0 => Compass::North, 1 => Compass::South, 2 => Compass::East, 3 => Compass::West, _ => Compass::East },
         }
     }

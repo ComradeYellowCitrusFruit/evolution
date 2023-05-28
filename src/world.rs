@@ -1,7 +1,7 @@
 #[allow(dead_code)]
 
-use crate::cell::*;
-use std::{vec::Vec, ops::Index, ptr::null_mut};
+use crate::{cell::*, map::RBTree};
+use std::{vec::Vec, ops::Index, ptr::null_mut, io::sink};
 use rand::*;
 
 #[derive(Debug, Clone, Copy)]
@@ -77,10 +77,27 @@ impl World {
 
         ret
     }
+
+    fn handle_input(&mut self, neuron: u8, weight: u16) -> f64 {
+        // TODO: stuff
+    }
     
-    pub fn step(&self) -> () {
-        for cell in self.cell_list.as_slice() {
-            // TODO: cosas
+    pub fn step(&mut self) -> () {
+        for cell in self.cell_list.as_mut_slice() {
+            let mut sink_in: RBTree<u8, Vec<f64>>;
+
+            for gene in cell.genes.as_mut_slice() {
+                let input_node: u8 = ((*gene >> 23) & 0xff) as u8;
+                let output_node: u8 = ((*gene >> 16) & 0xff) as u8;
+                match sink_in.get(&output_node) {
+                    Some(vector) => {
+                        vector.push(self.handle_input(input_node, (*gene & 0xffff) as u16));
+                    },
+                    None => {
+                        sink_in.insert(output_node, vec![self.handle_input(input_node, (*gene & 0xffff) as u16)]);
+                    },
+                }
+            }
         }
     }
 }
