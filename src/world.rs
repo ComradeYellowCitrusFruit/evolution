@@ -73,9 +73,11 @@ pub struct World {
     grid: Grid,
 }
 
+#[derive(Clone, PartialEq)]
 pub enum GeneInput {
     Input(f64),
-    Internal(InternalNeurons),
+    Internal(InternalNeurons, usize),
+    Empty,
 }
 
 impl World {
@@ -98,11 +100,38 @@ impl World {
     
     pub fn step(&self) -> () {
         let mut gene_inputs: Vec<Vec<GeneInput>> = Vec::with_capacity(self.cell_list.len());
-        for cell in self.cell_list.as_slice() {
-            gene_inputs.push(Vec::with_capacity(8));
-            for i in cell.genes.as_slice() {
-                let inputs = gene_inputs.last_mut().unwrap();
+        for i in 0..self.cell_list.len() {
+            let cell = self.cell_list.index(i);
+            gene_inputs.push(vec![GeneInput::Empty; 15]);
+            let inputs = gene_inputs.last_mut().unwrap();
+
+            for j in cell.genes.as_slice() {
+                let unpacked = decode_gene(*j);
+                let index = if unpacked.4 {
+                    (unpacked.1 % 8) + 8 
+                } else {
+                    unpacked.1 % 8
+                } as usize;
                 
+                let input = if unpacked.3 {
+                    GeneInput::Internal(InternalNeurons::from_int(unpacked.0), i)
+                } else {
+                    GeneInput::Input(InputNeurons::from_int(unpacked.0).handle(cell, &self.grid))
+                };
+                inputs[index] = input; // TODO: Multiple inputs
+            }
+        }
+
+        for i in 0..self.cell_list.len() {
+            let cell = self.cell_list.index(i);
+            let inputs = gene_inputs.index(i);
+
+            for j in inputs.as_slice() {
+                if *j == GeneInput::Empty {
+                    continue;
+                }
+
+
             }
         }
     }

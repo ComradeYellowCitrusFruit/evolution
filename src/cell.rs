@@ -1,4 +1,4 @@
-use std::ptr::null_mut;
+use std::{ptr::null_mut, iter::FlatMap, ops::Neg};
 #[allow(dead_code)]
 
 use std::{vec::Vec, ops::Index, clone::Clone, marker::Copy, collections::btree_map::OccupiedEntry};
@@ -7,7 +7,7 @@ use crate::world::*;
 
 const MAGIC_GENE_DECISION_WORD: u16 = 0x4C65;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Compass {
     North = 0,
     South,
@@ -15,7 +15,7 @@ pub enum Compass {
     West,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum InputNeurons {
     // Spacial information. 
     FoodLeftRight = 0,
@@ -56,7 +56,7 @@ pub enum InputNeurons {
     Oscilator,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum InternalNeurons {
     // Hyperbolic trig
     Tanh = 0,
@@ -71,7 +71,7 @@ pub enum InternalNeurons {
     InverseSqrt,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum OutputNeurons {
     // Misc
     SetOscilator,
@@ -116,6 +116,46 @@ impl InternalNeurons {
             6 => Self::Sqrt,
             7 => Self::InverseSqrt,
             _ => Self::Tanh,
+        }
+    }
+
+    pub fn handle(&self, inputs: &Vec<GeneInput>, all_inputs: &Vec<Vec<GeneInput>>) -> f64 {
+        let mut sum = 0.0;
+        let mut ctr = 0;
+
+        for i in inputs.as_slice() {
+            sum += match *i {
+                GeneInput::Input(f) => {
+                    if f.is_nan() == false && f.is_finite() {
+                        f
+                    } else {
+                        0
+                    }
+                },
+                GeneInput::Internal(neuron, cell_index) => {
+                    if neuron == self {
+                        0.0
+                    } else {
+                        neuron.handle(all_inputs.index(cell_index), all_inputs)
+                    }
+                },
+                GeneInput::Empty => {
+                    0.0
+                },
+            };
+
+            ctr += 1;
+        }
+
+        match *self {
+            Self::Tanh => sum.tanh(),
+            Self::Cosh => sum.cosh(),
+            Self::Sinh => sum.sinh(),
+            Self::Abs => sum.abs().tanh(),
+            Self::Neg => sum.neg().tanh(),
+            Self::Avg => sum/(ctr as f64),
+            Self::Sqrt => sum.sqrt(),
+            Self::InverseSqrt => 1.0/sum.sqrt(),
         }
     }
 }
@@ -499,15 +539,6 @@ pub fn decode_gene(gene: Gene) -> (i32, i32, u16, bool, bool) {
     (input, output, weight, input_is_internal, output_is_internal)
 }
 
-pub fn gene_generate_input(gene: Gene, cell: &Cell, grid: &Grid) -> GeneInput {
-    let decoded = decode_gene(gene);
-    if decoded.3 {
-        GeneInput::Internal(InternalNeurons::from_int(decoded.0))
-    } else {
-        GeneInput::Input(InputNeurons::from_int(decoded.0).handle(cell, grid))
-    }
-}
-
 
 #[derive(Debug,Clone, Copy)]
 pub struct Oscilator {
@@ -528,7 +559,7 @@ impl Oscilator {
     pub fn update(&mut self) -> () {
         self.counter += self.frequency;
         if self.counter > 1.0 {
-            self.counter = 0;
+            self.counter = 0.0;
             self.state = !self.state;
         }
     }
