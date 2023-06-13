@@ -57,7 +57,7 @@ pub enum InputNeurons {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum InteralNeurons {
+pub enum InternalNeurons {
     // Hyperbolic trig
     Tanh = 0,
     Cosh,
@@ -104,7 +104,7 @@ impl OutputNeurons {
     }
 }
 
-impl InteralNeurons {
+impl InternalNeurons {
     pub fn from_int(integer: i32) -> Self {
         match integer % 8 {
             0 => Self::Tanh,
@@ -464,8 +464,7 @@ impl InputNeurons {
                 thread_rng().gen_range(-1.0..=1.0)
             },
             Self::Oscilator => {
-                // TODO: this
-                0.0
+                cell.oscilator.get_state()
             },
         }
     }
@@ -509,6 +508,32 @@ pub fn gene_generate_input(gene: Gene, cell: &Cell, grid: &Grid) -> GeneInput {
     }
 }
 
+
+#[derive(Debug,Clone, Copy)]
+pub struct Oscilator {
+    counter: f64,
+    frequency: f64,
+    state: bool,
+}
+
+impl Oscilator {
+    pub fn get_state(&self) -> f64 {
+        if self.state {
+            1.0
+        } else {
+            -1.0
+        }
+    }
+
+    pub fn update(&mut self) -> () {
+        self.counter += self.frequency;
+        if self.counter > 1.0 {
+            self.counter = 0;
+            self.state = !self.state;
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Cell {
     pub genes: Vec<Gene>,
@@ -516,6 +541,7 @@ pub struct Cell {
     pub last_move: Position<usize>,
     pub food_level: u32,
     pub rotation: Compass,
+    pub oscilator: Oscilator,
 }
 
 impl Index<usize> for Cell {
@@ -531,8 +557,10 @@ impl Cell {
         Cell {
             genes: vec![0; gene_count],
             position: Position { x: 0, y: 0 },
+            last_move: Position { x: 0, y: 0 },
             food_level: 10,
             rotation: match rand::thread_rng().gen::<u8>() % 4 { 0 => Compass::North, 1 => Compass::South, 2 => Compass::East, 3 => Compass::West, _ => Compass::East },
+            oscilator: Oscilator { counter: 0.0, frequency: 0.1, state: false }
         }
     }
 
@@ -545,6 +573,7 @@ impl Cell {
         }
 
         ret.position = self.position;
+        ret.last_move = Position::new(0, 0);
         ret
     }
 }

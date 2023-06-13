@@ -75,7 +75,7 @@ pub struct World {
 
 pub enum GeneInput {
     Input(f64),
-    Internal(InteralNeurons),
+    Internal(InternalNeurons),
 }
 
 impl World {
