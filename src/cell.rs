@@ -1,8 +1,9 @@
+use std::ptr::null_mut;
 #[allow(dead_code)]
 
 use std::{vec::Vec, ops::Index, clone::Clone, marker::Copy, collections::btree_map::OccupiedEntry};
 use rand::*;
-use crate::world::Position;
+use crate::world::*;
 
 const MAGIC_GENE_DECISION_WORD: u16 = 0x4C65;
 
@@ -149,6 +150,325 @@ impl InputNeurons {
             _ => Self::Random
         }
     }
+
+    pub fn handle(&mut self, cell: &Cell, grid: &Grid) -> f64 {
+        match *self {
+            Self::FoodLeftRight => {
+                if grid[Position::new(cell.position.x + 1, cell.position.y)].has_food {
+                    1.0
+                } else if grid[Position::new(cell.position.x - 1, cell.position.y)].has_food {
+                    -1.0
+                } else {
+                    0.0
+                }
+            },
+            Self::FoodUpDown => {
+                if grid[Position::new(cell.position.x, cell.position.y + 1)].has_food {
+                    1.0
+                } else if grid[Position::new(cell.position.x, cell.position.y - 1)].has_food {
+                    -1.0
+                } else {
+                    0.0
+                }
+            },
+            Self::FoodForward => {
+                match cell.rotation {
+                    Compass::North => {
+                        if grid[Position::new(cell.position.x, cell.position.y + 1)].has_food {
+                            1.0
+                        } else if grid[Position::new(cell.position.x, cell.position.y - 1)].has_food {
+                            -1.0
+                        } else {
+                            0.0
+                        }
+                    },
+                    Compass::South => {
+                        if grid[Position::new(cell.position.x, cell.position.y - 1)].has_food {
+                            1.0
+                        } else if grid[Position::new(cell.position.x, cell.position.y + 1)].has_food {
+                            -1.0
+                        } else {
+                            0.0
+                        }
+                    },
+                    Compass::East => {
+                        if grid[Position::new(cell.position.x + 1, cell.position.y)].has_food {
+                            1.0
+                        } else if grid[Position::new(cell.position.x - 1, cell.position.y)].has_food {
+                            -1.0
+                        } else {
+                            0.0
+                        }
+                    },
+                    Compass::West => {
+                        if grid[Position::new(cell.position.x - 1, cell.position.y)].has_food {
+                            1.0
+                        } else if grid[Position::new(cell.position.x + 1, cell.position.y)].has_food {
+                            -1.0
+                        } else {
+                            0.0
+                        }
+                    },
+                }
+            },
+            Self::FoodDensity => {
+                let mut count = 0.0;
+                let pos = cell.position;
+                count += if grid[pos].has_food {
+                    1.0
+                } else {
+                    0.0
+                };
+                count += if grid[Position::new(pos.x, pos.y + 1)].has_food {
+                    1.0
+                } else {
+                    0.0
+                };
+                count += if grid[Position::new(pos.x + 1, pos.y + 1)].has_food {
+                    1.0
+                } else {
+                    0.0
+                };
+                count += if grid[Position::new(pos.x + 1, pos.y)].has_food {
+                    1.0
+                } else {
+                    0.0
+                };
+                count += if grid[Position::new(pos.x + 1, pos.y - 1)].has_food {
+                    1.0
+                } else {
+                    0.0
+                };
+                count += if grid[Position::new(pos.x, pos.y - 1)].has_food {
+                    1.0
+                } else {
+                    0.0
+                };
+                count += if grid[Position::new(pos.x - 1, pos.y - 1)].has_food {
+                    1.0
+                } else {
+                    0.0
+                };
+                count += if grid[Position::new(pos.x - 1, pos.y)].has_food {
+                    1.0
+                } else {
+                    0.0
+                };
+                count += if grid[Position::new(pos.x - 1, pos.y + 1)].has_food {
+                    1.0
+                } else {
+                    0.0
+                };
+                count/9.0
+            },
+            Self::PheromoneLeftRight => {
+                if grid[Position::new(cell.position.x + 1, cell.position.y)].pheromone_level != 0.0 {
+                    grid[Position::new(cell.position.x + 1, cell.position.y)].pheromone_level/50.0
+                } else if grid[Position::new(cell.position.x - 1, cell.position.y)].pheromone_level != 0.0 {
+                    grid[Position::new(cell.position.x - 1, cell.position.y)].pheromone_level/-50.0
+                } else {
+                    0.0
+                }
+            },
+            Self::PheromoneUpDown => {
+                if grid[Position::new(cell.position.x, cell.position.y + 1)].pheromone_level != 0.0 {
+                    grid[Position::new(cell.position.x, cell.position.y + 1)].pheromone_level/50.0
+                } else if grid[Position::new(cell.position.x, cell.position.y - 1)].pheromone_level != 0.0 {
+                    grid[Position::new(cell.position.x, cell.position.y - 1)].pheromone_level/-50.0
+                } else {
+                    0.0
+                }
+            },
+            Self::PheromoneForward => {
+                match cell.rotation {
+                    Compass::North => {
+                        if grid[Position::new(cell.position.x, cell.position.y + 1)].pheromone_level != 0.0 {
+                            grid[Position::new(cell.position.x, cell.position.y + 1)].pheromone_level/50.0
+                        } else if grid[Position::new(cell.position.x, cell.position.y - 1)].pheromone_level != 0.0 {
+                            grid[Position::new(cell.position.x, cell.position.y - 1)].pheromone_level/-50.0
+                        } else {
+                            0.0
+                        }
+                    },
+                    Compass::South => {
+                        if grid[Position::new(cell.position.x, cell.position.y - 1)].pheromone_level != 0.0 {
+                            grid[Position::new(cell.position.x, cell.position.y - 1)].pheromone_level/50.0
+                        } else if grid[Position::new(cell.position.x, cell.position.y + 1)].pheromone_level != 0.0 {
+                            grid[Position::new(cell.position.x, cell.position.y + 1)].pheromone_level/-50.0
+                        } else {
+                            0.0
+                        }
+                    },
+                    Compass::East => {
+                        if grid[Position::new(cell.position.x + 1, cell.position.y)].pheromone_level != 0.0 {
+                            grid[Position::new(cell.position.x + 1, cell.position.y)].pheromone_level/50.0
+                        } else if grid[Position::new(cell.position.x - 1, cell.position.y)].pheromone_level != 0.0 {
+                            grid[Position::new(cell.position.x - 1, cell.position.y)].pheromone_level/-50.0
+                        } else {
+                            0.0
+                        }
+                    },
+                    Compass::West => {
+                        if grid[Position::new(cell.position.x - 1, cell.position.y)].pheromone_level != 0.0 {
+                            grid[Position::new(cell.position.x - 1, cell.position.y)].pheromone_level/50.0
+                        } else if grid[Position::new(cell.position.x + 1, cell.position.y)].pheromone_level != 0.0 {
+                            grid[Position::new(cell.position.x + 1, cell.position.y)].pheromone_level/-50.0
+                        } else {
+                            0.0
+                        }
+                    },
+                }
+            },
+            Self::PheromoneDensity => {
+                let mut pheromones = 0.0;
+                let pos = cell.position;
+                pheromones += grid[Position::new(pos.x, pos.y)].pheromone_level;
+                pheromones += grid[Position::new(pos.x, pos.y + 1)].pheromone_level;
+                pheromones += grid[Position::new(pos.x + 1, pos.y + 1)].pheromone_level;
+                pheromones += grid[Position::new(pos.x + 1, pos.y)].pheromone_level;
+                pheromones += grid[Position::new(pos.x + 1, pos.y - 1)].pheromone_level;
+                pheromones += grid[Position::new(pos.x, pos.y - 1)].pheromone_level;
+                pheromones += grid[Position::new(pos.x - 1, pos.y + 1)].pheromone_level;
+                pheromones += grid[Position::new(pos.x - 1, pos.y)].pheromone_level;
+                pheromones += grid[Position::new(pos.x - 1, pos.y - 1)].pheromone_level;
+                pheromones/450.0
+            },
+            Self::BlockageLeftRight | Self::PopLeftRight => {
+                if grid[Position::new(cell.position.x + 1, cell.position.y)].cell != null_mut() {
+                    1.0
+                } else if grid[Position::new(cell.position.x - 1, cell.position.y)].cell != null_mut() {
+                    -1.0
+                } else {
+                    0.0
+                }
+            },
+            Self::BlockageUpDown | Self::PopUpDown => {
+                if grid[Position::new(cell.position.x, cell.position.y + 1)].cell != null_mut() {
+                    1.0
+                } else if grid[Position::new(cell.position.x, cell.position.y - 1)].cell != null_mut() {
+                    -1.0
+                } else {
+                    0.0
+                }
+            },
+            Self::BlockageForward | Self::PopForward => {
+                match cell.rotation {
+                    Compass::North => {
+                        if grid[Position::new(cell.position.x, cell.position.y + 1)].cell != null_mut() {
+                            1.0
+                        } else if grid[Position::new(cell.position.x, cell.position.y - 1)].cell != null_mut() {
+                            -1.0
+                        } else {
+                            0.0
+                        }
+                    },
+                    Compass::South => {
+                        if grid[Position::new(cell.position.x, cell.position.y - 1)].cell != null_mut() {
+                            1.0
+                        } else if grid[Position::new(cell.position.x, cell.position.y + 1)].cell != null_mut() {
+                            -1.0
+                        } else {
+                            0.0
+                        }
+                    },
+                    Compass::East => {
+                        if grid[Position::new(cell.position.x + 1, cell.position.y)].cell != null_mut() {
+                            1.0
+                        } else if grid[Position::new(cell.position.x - 1, cell.position.y)].cell != null_mut() {
+                            -1.0
+                        } else {
+                            0.0
+                        }
+                    },
+                    Compass::West => {
+                        if grid[Position::new(cell.position.x - 1, cell.position.y)].cell != null_mut() {
+                            1.0
+                        } else if grid[Position::new(cell.position.x + 1, cell.position.y)].cell != null_mut() {
+                            -1.0
+                        } else {
+                            0.0
+                        }
+                    },
+                }
+            },
+            Self::PopDensity => {
+                let mut count = 1.0;
+                let pos = cell.position;
+                count += if grid[Position::new(pos.x, pos.y + 1)].cell != null_mut() {
+                    1.0
+                } else {
+                    0.0
+                };
+                count += if grid[Position::new(pos.x + 1, pos.y + 1)].cell != null_mut() {
+                    1.0
+                } else {
+                    0.0
+                };
+                count += if grid[Position::new(pos.x + 1, pos.y)].cell != null_mut() {
+                    1.0
+                } else {
+                    0.0
+                };
+                count += if grid[Position::new(pos.x + 1, pos.y - 1)].cell != null_mut() {
+                    1.0
+                } else {
+                    0.0
+                };
+                count += if grid[Position::new(pos.x, pos.y - 1)].cell != null_mut() {
+                    1.0
+                } else {
+                    0.0
+                };
+                count += if grid[Position::new(pos.x - 1, pos.y - 1)].cell != null_mut() {
+                    1.0
+                } else {
+                    0.0
+                };
+                count += if grid[Position::new(pos.x - 1, pos.y)].cell != null_mut() {
+                    1.0
+                } else {
+                    0.0
+                };
+                count += if grid[Position::new(pos.x - 1, pos.y + 1)].cell != null_mut() {
+                    1.0
+                } else {
+                    0.0
+                };
+                count/9.0
+            },
+            Self::LocationX => {
+                ((cell.position.x as f64) * (2.0)/((grid.get_x() - 1) as f64)) - 1.0
+            },
+            Self::LocationY => {
+                ((cell.position.y as f64) * (2.0)/((grid.get_y() - 1) as f64)) - 1.0
+            },
+            Self::Age => {
+                // TODO: this
+                0.0
+            },
+            Self::KillCount => {
+                // TODO: this
+                0.0
+            },
+            Self::LastMoveX => {
+                cell.last_move.x as f64
+            },
+            Self::LastMoveY => {
+                cell.last_move.y as f64
+            },
+            Self::GeneticSimilarity => {
+                // TODO: this
+                0.0
+            },
+            Self::Random => {
+                thread_rng().gen_range(-1.0..=1.0)
+            },
+            Self::Oscilator => {
+                // TODO: this
+                0.0
+            },
+        }
+    }
 }
 
 type Gene = i32;
@@ -180,10 +500,20 @@ pub fn decode_gene(gene: Gene) -> (i32, i32, u16, bool, bool) {
     (input, output, weight, input_is_internal, output_is_internal)
 }
 
+pub fn gene_generate_input(gene: Gene, cell: &Cell, grid: &Grid) -> GeneInput {
+    let decoded = decode_gene(gene);
+    if decoded.3 {
+        GeneInput::Internal(InternalNeurons::from_int(decoded.0))
+    } else {
+        GeneInput::Input(InputNeurons::from_int(decoded.0).handle(cell, grid))
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Cell {
     pub genes: Vec<Gene>,
     pub position: Position<usize>,
+    pub last_move: Position<usize>,
     pub food_level: u32,
     pub rotation: Compass,
 }

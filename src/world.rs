@@ -10,8 +10,13 @@ pub struct Position<T> {
     pub y: T,
 }
 
+impl<T> Position<T> {
+    pub fn new(x: T, y: T) -> Position<T> {
+        Position { x: x, y: y }
+    }
+}
 #[derive(Debug, Clone)]
-struct Grid {
+pub struct Grid {
     x: usize,
     y: usize,
     internal: Vec<Tile>,
@@ -24,6 +29,14 @@ impl Grid {
             y: yp,
             internal: vec![Tile { has_food: false, pheromone_level: 0.0, cell: null_mut() }; xp * yp],
         }
+    }
+
+    pub fn get_x(&self) -> usize {
+        self.x
+    }
+
+    pub fn get_y(&self) -> usize {
+        self.y
     }
 }
 
@@ -50,9 +63,9 @@ impl Index<Position<usize>> for Grid {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Tile {
-    pub(self) has_food: bool,
-    pub(self) pheromone_level: f32,
-    pub(self) cell: *mut Cell, // ik you're not supposed to use pointers in Rust but whatever.
+    pub has_food: bool,
+    pub pheromone_level: f64,
+    pub cell: *mut Cell, // ik you're not supposed to use pointers in Rust but whatever.
 }
 
 pub struct World {
@@ -60,8 +73,8 @@ pub struct World {
     grid: Grid,
 }
 
-enum GeneInput {
-    Input(f64, InputNeurons),
+pub enum GeneInput {
+    Input(f64),
     Internal(InteralNeurons),
 }
 
@@ -86,8 +99,9 @@ impl World {
     pub fn step(&self) -> () {
         let mut gene_inputs: Vec<Vec<GeneInput>> = Vec::with_capacity(self.cell_list.len());
         for cell in self.cell_list.as_slice() {
-            gene_inputs.push(Vec::with_capacity(cell.genes.len()));
-            for i in gene_inputs.last().unwrap().as_slice() {
+            gene_inputs.push(Vec::with_capacity(8));
+            for i in cell.genes.as_slice() {
+                let inputs = gene_inputs.last_mut().unwrap();
                 
             }
         }
